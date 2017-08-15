@@ -15,25 +15,25 @@ class TestSelectors(TestCase):
         self.xlengths = self.training.get_all_Xlengths()
 
     def test_select_constant_interface(self):
-        model = SelectorConstant(self.sequences, self.xlengths, 'BUY').select()
+        model = SelectorConstant(self.sequences, self.xlengths, 'BUY', verbose=False).select()
         self.assertGreaterEqual(model.n_components, 2)
-        model = SelectorConstant(self.sequences, self.xlengths, 'BOOK').select()
+        model = SelectorConstant(self.sequences, self.xlengths, 'BOOK', verbose=False).select()
         self.assertGreaterEqual(model.n_components, 2)
 
     def test_select_bic_interface(self):
-        model = SelectorBIC(self.sequences, self.xlengths, 'FRANK').select()
+        model = SelectorBIC(self.sequences, self.xlengths, 'FRANK', verbose=False).select()
         self.assertGreaterEqual(model.n_components, 2)
-        model = SelectorBIC(self.sequences, self.xlengths, 'VEGETABLE').select()
+        model = SelectorBIC(self.sequences, self.xlengths, 'VEGETABLE', verbose=False).select()
         self.assertGreaterEqual(model.n_components, 2)
 
     def test_select_cv_interface(self):
-        model = SelectorCV(self.sequences, self.xlengths, 'JOHN').select()
+        model = SelectorCV(self.sequences, self.xlengths, 'JOHN', verbose=False).select()
         self.assertGreaterEqual(model.n_components, 2)
-        model = SelectorCV(self.sequences, self.xlengths, 'CHICKEN').select()
+        model = SelectorCV(self.sequences, self.xlengths, 'CHICKEN', verbose=False).select()
         self.assertGreaterEqual(model.n_components, 2)
 
     def test_select_dic_interface(self):
-        model = SelectorDIC(self.sequences, self.xlengths, 'MARY').select()
+        model = SelectorDIC(self.sequences, self.xlengths, 'MARY', verbose=False).select()
         self.assertGreaterEqual(model.n_components, 2)
-        model = SelectorDIC(self.sequences, self.xlengths, 'TOY').select()
+        model = SelectorDIC(self.sequences, self.xlengths, 'TOY', verbose=False).select()
         self.assertGreaterEqual(model.n_components, 2)

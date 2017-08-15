@@ -13,10 +13,16 @@ class ModelSelector(object):
     base class for model selection (strategy design pattern)
     '''
 
-    def __init__(self, all_word_sequences: dict, all_word_Xlengths: dict, this_word: str,
+    def __init__(self,
+                 all_word_sequences: dict,
+                 all_word_Xlengths: dict,
+                 this_word: str,
                  n_constant=3,
-                 min_n_components=2, max_n_components=10,
-                 random_state=14, verbose=False):
+                 min_n_components=2,
+                 max_n_components=10,
+                 random_state=14,
+                 verbose=False):
+        """ init """
         self.words = all_word_sequences
         self.hwords = all_word_Xlengths
         self.sequences = all_word_sequences[this_word]
@@ -77,7 +83,52 @@ class SelectorBIC(ModelSelector):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
         # TODO implement model selection based on BIC scores
-        raise NotImplementedError
+
+        best_model = None
+        lowest_score = float("+inf")
+
+        for n in range(self.min_n_components, self.max_n_components + 1):
+
+            try:
+                model = GaussianHMM(n_components=n,
+                                    covariance_type="diag",
+                                    n_iter=1000,
+                                    random_state=self.random_state,
+                                    verbose=False).fit(self.X, self.lengths)
+
+                # BIC score = -2 * logL + p * logN
+                logL = model.score(self.X, self.lengths)
+
+                # p: nb of parameters  = n * n + 2 * n * d - 1
+                #      where: n = n_components
+                #             d = nb of features
+                # see https://discussions.udacity.com/t/bayesian-information-criteria-equation/326887/2
+                d = model.n_features
+                p = n * n + 2 * n * d - 1
+
+                # N: nb of data points
+                # see https://discussions.udacity.com/t/number-of-data-points-bic-calculation/235294/4
+                N = len(self.X)
+                logN = np.log(N)
+
+                score = -2.0 * logL + p * logN
+
+                if self.verbose:
+                    print("   model created for {} with {} states, BIC score {:.2f}".format(self.this_word, n, score))
+
+            except ValueError:
+                model = None
+                score = float("+inf")
+
+                if self.verbose:
+                    print("   failure on {} with {} states".format(self.this_word, n))
+
+            finally:
+                if score < lowest_score:
+                    best_model = model
+                    lowest_score = score
+
+        return best_model
 
 
 class SelectorDIC(ModelSelector):
@@ -93,16 +144,105 @@ class SelectorDIC(ModelSelector):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
         # TODO implement model selection based on DIC scores
-        raise NotImplementedError
+
+        best_model = None
+        highest_score = float("-inf")
+
+        for n in range(self.min_n_components, self.max_n_components + 1):
+
+            try:
+                model = GaussianHMM(n_components=n,
+                                    covariance_type="diag",
+                                    n_iter=1000,
+                                    random_state=self.random_state,
+                                    verbose=False).fit(self.X, self.lengths)
+
+                # DIC score = logL(this_word) - mean(logL(other_words))
+                logL = model.score(self.X, self.lengths)
+
+                logL_others = []
+                for word in self.words:
+                    if word != self.this_word:
+                        word_X, word_lengths = self.hwords[word]
+                        logL_others.append(model.score(word_X, word_lengths))
+
+                score = logL - np.mean(logL_others)
+
+                if self.verbose:
+                    print("   model created for {} with {} states, DIC score {:.2f}".format(self.this_word, n, score))
+
+            except ValueError:
+                model = None
+                score = float("-inf")
+
+                if self.verbose:
+                    print("   failure on {} with {} states".format(self.this_word, n))
+
+            finally:
+                if score > highest_score:
+                    best_model = model
+                    highest_score = score
+
+        return best_model
 
 
 class SelectorCV(ModelSelector):
-    ''' select best model based on average log Likelihood of cross-validation folds
-
-    '''
+    """
+    select best model based on average log Likelihood of cross-validation folds
+    """
 
     def select(self):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
         # TODO implement model selection using CV
-        raise NotImplementedError
+
+        best_model = None
+        highest_score = float("-inf")
+
+        n_splits = min(3, len(self.sequences))
+        split_method = KFold(n_splits)
+
+        for n in range(self.min_n_components, self.max_n_components + 1):
+
+            try:
+                cv_score = []
+                for cv_train_idx, cv_test_idx in split_method.split(self.sequences):
+                    train_X, train_lengths = combine_sequences(cv_train_idx, self.sequences)
+                    test_X, test_lengths = combine_sequences(cv_test_idx, self.sequences)
+
+                    cv_model = GaussianHMM(n_components=n,
+                                           covariance_type="diag",
+                                           n_iter=1000,
+                                           random_state=self.random_state,
+                                           verbose=False).fit(train_X, train_lengths)
+                    cv_score.append(cv_model.score(test_X, test_lengths))
+
+                score = np.mean(cv_score)
+
+                if score > highest_score:
+                    # Recompute model based on all data but keep score as mean(cv_score)
+                    model = GaussianHMM(n_components=n,
+                                        covariance_type="diag",
+                                        n_iter=1000,
+                                        random_state=self.random_state,
+                                        verbose=False).fit(self.X, self.lengths)
+                    # score = model.score(self.X, self.lengths)
+
+                if self.verbose:
+                    print("   model created for {} with {} states, score {:.2f} and {} cv splits".format(self.this_word,
+                                                                                                         n, score,
+                                                                                                         n_splits))
+
+            except ValueError:
+                model = None
+                score = float("-inf")
+
+                if self.verbose:
+                    print("   failure on {} with {} states".format(self.this_word, n))
+
+            finally:
+                if score > highest_score:
+                    best_model = model
+                    highest_score = score
+
+        return best_model
