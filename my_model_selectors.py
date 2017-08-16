@@ -200,6 +200,8 @@ class SelectorCV(ModelSelector):
         highest_score = float("-inf")
 
         n_splits = min(3, len(self.sequences))
+        if n_splits < 2:
+            return best_model
         split_method = KFold(n_splits)
 
         for n in range(self.min_n_components, self.max_n_components + 1):
@@ -216,7 +218,6 @@ class SelectorCV(ModelSelector):
                                            random_state=self.random_state,
                                            verbose=False).fit(train_X, train_lengths)
                     cv_score.append(cv_model.score(test_X, test_lengths))
-
                 score = np.mean(cv_score)
 
                 if score > highest_score:
@@ -232,7 +233,6 @@ class SelectorCV(ModelSelector):
                     print("   model created for {} with {} states, score {:.2f} and {} cv splits".format(self.this_word,
                                                                                                          n, score,
                                                                                                          n_splits))
-
             except ValueError:
                 model = None
                 score = float("-inf")
