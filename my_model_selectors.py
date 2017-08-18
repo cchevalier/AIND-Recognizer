@@ -82,7 +82,7 @@ class SelectorBIC(ModelSelector):
         """
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-        # TODO implement model selection based on BIC scores
+        # DONE implement model selection based on BIC scores
 
         best_model = None
         lowest_score = float("+inf")
@@ -143,7 +143,7 @@ class SelectorDIC(ModelSelector):
     def select(self):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-        # TODO implement model selection based on DIC scores
+        # DONE implement model selection based on DIC scores
 
         best_model = None
         highest_score = float("-inf")
@@ -194,7 +194,7 @@ class SelectorCV(ModelSelector):
     def select(self):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-        # TODO implement model selection using CV
+        # DONE implement model selection using CV
 
         best_model = None
         highest_score = float("-inf")
